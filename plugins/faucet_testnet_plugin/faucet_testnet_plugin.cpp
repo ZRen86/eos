@@ -1,10 +1,5 @@
-/**
- *  @file
- *  @copyright defined in eos/LICENSE.txt
- */
 #include <eosio/faucet_testnet_plugin/faucet_testnet_plugin.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
-#include <eosio/utilities/key_conversion.hpp>
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
@@ -61,7 +56,7 @@ using results_pair = std::pair<uint32_t,fc::variant>;
           try { \
              if (body.empty()) body = "{}"; \
              const auto result = api_handle->invoke_cb(body); \
-             response_cb(result.first, fc::json::to_string(result.second)); \
+             response_cb(result.first, fc::variant(result.second)); \
           } catch (...) { \
              http_plugin::handle_exception(#api_name, #call_name, body, response_cb); \
           } \
@@ -241,7 +236,7 @@ struct faucet_testnet_plugin_impl {
 
       _blocking_accounts = true;
       _timer.expires_from_now(boost::posix_time::microseconds(_create_interval_msec * 1000));
-      _timer.async_wait(boost::bind(&faucet_testnet_plugin_impl::timer_fired, this));
+      _timer.async_wait(std::bind(&faucet_testnet_plugin_impl::timer_fired, this));
 
       return std::make_pair(account_created, fc::variant(eosio::detail::faucet_testnet_empty()));
    }
@@ -299,14 +294,16 @@ void faucet_testnet_plugin::set_program_options(options_description&, options_de
 }
 
 void faucet_testnet_plugin::plugin_initialize(const variables_map& options) {
-   my->_create_interval_msec = options.at("faucet-create-interval-ms").as<uint32_t>();
-   my->_create_account_name = options.at("faucet-name").as<std::string>();
+   try {
+      my->_create_interval_msec = options.at( "faucet-create-interval-ms" ).as<uint32_t>();
+      my->_create_account_name = options.at( "faucet-name" ).as<std::string>();
 
-   auto faucet_key_pair = fc::json::from_string(options.at("faucet-private-key").as<std::string>()).as<key_pair>();
-   my->_create_account_public_key = public_key_type(faucet_key_pair.first);
-   ilog("Public Key: ${public}", ("public", my->_create_account_public_key));
-   fc::crypto::private_key private_key(faucet_key_pair.second);
-   my->_create_account_private_key = std::move(private_key);
+      auto faucet_key_pair = fc::json::from_string( options.at( "faucet-private-key" ).as<std::string>()).as<key_pair>();
+      my->_create_account_public_key = public_key_type( faucet_key_pair.first );
+      ilog( "Public Key: ${public}", ("public", my->_create_account_public_key));
+      fc::crypto::private_key private_key( faucet_key_pair.second );
+      my->_create_account_private_key = std::move( private_key );
+   } FC_LOG_AND_RETHROW()
 }
 
 void faucet_testnet_plugin::plugin_startup() {

@@ -1,7 +1,3 @@
-/**
- *  @file
- *  @copyright defined in eos/LICENSE.txt
- */
 #pragma once
 
 #include <appbase/channel.hpp>
@@ -20,16 +16,15 @@ namespace eosio { namespace chain { namespace plugin_interface {
    using next_function = std::function<void(const fc::static_variant<fc::exception_ptr, T>&)>;
 
    struct chain_plugin_interface;
-   
+
    namespace channels {
+      using pre_accepted_block     = channel_decl<struct pre_accepted_block_tag,    signed_block_ptr>;
       using rejected_block         = channel_decl<struct rejected_block_tag,        signed_block_ptr>;
       using accepted_block_header  = channel_decl<struct accepted_block_header_tag, block_state_ptr>;
       using accepted_block         = channel_decl<struct accepted_block_tag,        block_state_ptr>;
       using irreversible_block     = channel_decl<struct irreversible_block_tag,    block_state_ptr>;
       using accepted_transaction   = channel_decl<struct accepted_transaction_tag,  transaction_metadata_ptr>;
       using applied_transaction    = channel_decl<struct applied_transaction_tag,   transaction_trace_ptr>;
-      using accepted_confirmation  = channel_decl<struct accepted_confirmation_tag, header_confirmation>;
-
    }
 
    namespace methods {
@@ -49,14 +44,14 @@ namespace eosio { namespace chain { namespace plugin_interface {
 
       namespace methods {
          // synchronously push a block/trx to a single provider
-         using block_sync            = method_decl<chain_plugin_interface, void(const signed_block_ptr&), first_provider_policy>;
+         using block_sync            = method_decl<chain_plugin_interface, bool(const signed_block_ptr&, const std::optional<block_id_type>&), first_provider_policy>;
          using transaction_async     = method_decl<chain_plugin_interface, void(const packed_transaction_ptr&, bool, next_function<transaction_trace_ptr>), first_provider_policy>;
       }
    }
 
    namespace compat {
       namespace channels {
-         using transaction_ack       = channel_decl<struct accepted_transaction_tag, std::pair<fc::exception_ptr, packed_transaction_ptr>>;
+         using transaction_ack       = channel_decl<struct accepted_transaction_tag, std::pair<fc::exception_ptr, transaction_metadata_ptr>>;
       }
    }
 

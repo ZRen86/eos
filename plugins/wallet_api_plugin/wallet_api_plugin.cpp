@@ -1,7 +1,3 @@
-/**
- *  @file
- *  @copyright defined in eos/LICENSE.txt
- */
 #include <eosio/wallet_api_plugin/wallet_api_plugin.hpp>
 #include <eosio/wallet_plugin/wallet_manager.hpp>
 #include <eosio/chain/exceptions.hpp>
@@ -30,7 +26,7 @@ using namespace eosio;
           try { \
              if (body.empty()) body = "{}"; \
              INVOKE \
-             cb(http_response_code, fc::json::to_string(result)); \
+             cb(http_response_code, fc::variant(result)); \
           } catch (...) { \
              http_plugin::handle_exception(#api_name, #call_name, body, cb); \
           } \
@@ -107,31 +103,33 @@ void wallet_api_plugin::plugin_startup() {
 }
 
 void wallet_api_plugin::plugin_initialize(const variables_map& options) {
-   const auto& _http_plugin = app().get_plugin<http_plugin>();
-   if (!_http_plugin.is_on_loopback()) {
-      if (!_http_plugin.is_secure()) {
-         elog("\n"
-              "********!!!SECURITY ERROR!!!********\n"
-              "*                                  *\n"
-              "* --       Wallet API           -- *\n"
-              "* - EXPOSED to the LOCAL NETWORK - *\n"
-              "* -  HTTP RPC is NOT encrypted   - *\n"
-              "* - Password and/or Private Keys - *\n"
-              "* - are at HIGH risk of exposure - *\n"
-              "*                                  *\n"
-              "************************************\n");
-      } else {
-         wlog("\n"
-              "**********SECURITY WARNING**********\n"
-              "*                                  *\n"
-              "* --       Wallet API           -- *\n"
-              "* - EXPOSED to the LOCAL NETWORK - *\n"
-              "* - Password and/or Private Keys - *\n"
-              "* -   are at risk of exposure    - *\n"
-              "*                                  *\n"
-              "************************************\n");
+   try {
+      const auto& _http_plugin = app().get_plugin<http_plugin>();
+      if( !_http_plugin.is_on_loopback()) {
+         if( !_http_plugin.is_secure()) {
+            elog( "\n"
+                  "********!!!SECURITY ERROR!!!********\n"
+                  "*                                  *\n"
+                  "* --       Wallet API           -- *\n"
+                  "* - EXPOSED to the LOCAL NETWORK - *\n"
+                  "* -  HTTP RPC is NOT encrypted   - *\n"
+                  "* - Password and/or Private Keys - *\n"
+                  "* - are at HIGH risk of exposure - *\n"
+                  "*                                  *\n"
+                  "************************************\n" );
+         } else {
+            wlog( "\n"
+                  "**********SECURITY WARNING**********\n"
+                  "*                                  *\n"
+                  "* --       Wallet API           -- *\n"
+                  "* - EXPOSED to the LOCAL NETWORK - *\n"
+                  "* - Password and/or Private Keys - *\n"
+                  "* -   are at risk of exposure    - *\n"
+                  "*                                  *\n"
+                  "************************************\n" );
+         }
       }
-   }
+   } FC_LOG_AND_RETHROW()
 }
 
 

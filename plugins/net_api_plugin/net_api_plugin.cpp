@@ -1,7 +1,3 @@
-/**
- *  @file
- *  @copyright defined in eos/LICENSE.txt
- */
 #include <eosio/net_api_plugin/net_api_plugin.hpp>
 #include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/transaction.hpp>
@@ -29,7 +25,7 @@ using namespace eosio;
           try { \
              if (body.empty()) body = "{}"; \
              INVOKE \
-             cb(http_response_code, fc::json::to_string(result)); \
+             cb(http_response_code, fc::variant(result)); \
           } catch (...) { \
              http_plugin::handle_exception(#api_name, #call_name, body, cb); \
           } \
@@ -63,7 +59,6 @@ void net_api_plugin::plugin_startup() {
    ilog("starting net_api_plugin");
    // lifetime of plugin is lifetime of application
    auto& net_mgr = app().get_plugin<net_plugin>();
-
    app().get_plugin<http_plugin>().add_api({
     //   CALL(net, net_mgr, set_timeout,
     //        INVOKE_V_R(net_mgr, set_timeout, int64_t), 200),
@@ -79,21 +74,23 @@ void net_api_plugin::plugin_startup() {
             INVOKE_R_V(net_mgr, connections), 201),
     //   CALL(net, net_mgr, open,
     //        INVOKE_V_R(net_mgr, open, std::string), 200),
-   });
+   }, appbase::priority::medium_high);
 }
 
 void net_api_plugin::plugin_initialize(const variables_map& options) {
-   const auto& _http_plugin = app().get_plugin<http_plugin>();
-   if (!_http_plugin.is_on_loopback()) {
-      wlog("\n"
-           "**********SECURITY WARNING**********\n"
-           "*                                  *\n"
-           "* --         Net API            -- *\n"
-           "* - EXPOSED to the LOCAL NETWORK - *\n"
-           "* - USE ONLY ON SECURE NETWORKS! - *\n"
-           "*                                  *\n"
-           "************************************\n");
-   }
+   try {
+      const auto& _http_plugin = app().get_plugin<http_plugin>();
+      if( !_http_plugin.is_on_loopback()) {
+         wlog( "\n"
+               "**********SECURITY WARNING**********\n"
+               "*                                  *\n"
+               "* --         Net API            -- *\n"
+               "* - EXPOSED to the LOCAL NETWORK - *\n"
+               "* - USE ONLY ON SECURE NETWORKS! - *\n"
+               "*                                  *\n"
+               "************************************\n" );
+      }
+   } FC_LOG_AND_RETHROW()
 }
 
 
